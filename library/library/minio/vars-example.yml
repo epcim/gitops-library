@@ -1,0 +1,48 @@
+kustomize:
+  patches:
+  - target:
+      version: .*
+      kind: (StatefulSet|Deployment)
+      name: .*
+    patch: |-
+      - op: add
+        path: /spec/template/spec/nodeSelector
+        value: 
+          kubernetes.io/hostname: cmp1
+
+context:
+  ingress:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+       traefik.ingress.kubernetes.io/router.entrypoints: websecure
+       traefik.ingress.kubernetes.io/router.tls: "true"
+       hajimari.io/enable: "false"
+    hosts:
+    - {{ helmChart.releaseName }}.{{ args.domain }}
+    tls:
+    - hosts:
+      - {{ helmChart.releaseName }}.{{ args.domain }}
+
+  consoleIngress:
+    enabled: true
+    ingressClassName: "traefik"
+    annotations:
+       traefik.ingress.kubernetes.io/router.entrypoints: websecure
+       traefik.ingress.kubernetes.io/router.tls: "true"
+       hajimari.io/enable: "true"
+       hajimari.io/icon: database
+       #hajimari.io/group: network
+       hajimari.io/appName: Minio
+    hosts:
+    - {{ helmChart.releaseName }}-console.{{ args.domain }}
+    tls:
+    - hosts:
+      - {{ helmChart.releaseName }}-console.{{ args.domain }}
+
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+args:
+- name: boostrap
+  default: true
+- name: env
+  default: 
+- name: ingress
+  default: 
+- name: domain
+  default: example.com
+

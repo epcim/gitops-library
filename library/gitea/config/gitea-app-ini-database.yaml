@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: gitea-app-ini-database
+    namespace: gitops
+    annotations:
+        kustomize.config.k8s.io/behavior: replace
+        sealedsecrets.bitnami.com/managed: "true"
+type: Opaque
+stringData:
+    database: |
+        DB_TYPE=postgres
+        HOST=gitea-postgresql.gitops.svc
+        NAME=gitea
+        USER=gitea
+        PASSWD={{ secrets.gitea.db_password }}

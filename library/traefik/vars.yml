@@ -1,0 +1,169 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+
+helmChart:
+  # renovate: registryUrl=https://helm.traefik.io/traefik
+  repo: https://helm.traefik.io/traefik
+  chartName: traefik
+  chartVersion: 26.0.0
+  releaseName: traefik
+  namespace: sys
+  skipCRDs: false
+  skipPrePull: true
+  #skipUpdate: true
+
+
+secrets:
+  # cluster:
+  #   vip:
+  #     traefik: 1.1.1.1
+  # traefik:
+  #   basicauth:
+  #     htpasswd: xxx
+  #   resolver:
+  #     tokens:
+  #       example.com: xxx
+
+
+kustomize:
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: traefik
+  resources:
+    - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+
+context:
+  appname: traefik
+
+  fullnameOverride: traefik
+
+  installCRDs: true
+
+  providers:
+    kubernetesCRD:
+      enabled: true
+      allowCrossNamespace: false
+      allowExternalNameServices: false
+      namespaces: []
+
+
+  globalArguments:
+  - "--global.checknewversion"
+  - "--entryPoints.websecure.http.tls=true"
+  - "--entryPoints.websecure2.http.tls=true" # FIXME
+  - "--providers.kubernetesingress.ingressclass=traefik"
+  - "--metrics.prometheus=true"
+  - "--metrics.prometheus.entryPoint=metrics"
+
+
+  persistence:
+    name: data
+    enabled: true
+    {% if not args.bootstrap %}
+    #existingClaim: 
+    {% endif %}
+    path: /data
+    size: 128Mi
+    storageClass: default
+    #storageClass: microk8s-hostpath
+    # annotations: {
+    #   "pv.beta.kubernetes.io/gid": "65532"
+    # }
+
+
+
+  # Options for the main traefik service, where the entrypoints traffic comes from.
+  service:
+      # spec:
+        # externalTrafficPolicy: Cluster # default
+        # loadBalancerIP: "172.31.2.50"
+      enabled: true
+      type: LoadBalancer
+
+  ports:
+    traefik:
+      expose: false
+    web:
+      redirectTo:
+        port: websecure
+    websecure:
+       port: 8443
+       exposedPort: 443
+       #http3: true # experimental
+       expose: true
+       tls:
+         enabled: true
+         certResolver: cloudflare
+         domains:
+         - main: {{ args.domain }}
+           sans:
+           - "*.{{ args.domain }}"
+
+    metrics:
+        port: 8082
+        expose: true
+        exposedPort: 8082
+
+  ingressRoute:
+    enabled: true
+    dashboard:
+      enabled: true
+      annotations: {}
+      labels: {}
+
+  ingressClass:
+    enabled: true
+    isDefaultClass: true
+    fallbackApiVersion: v1
+
+  tlsOptions:
+    default:
+      minVersion: VersionTLS12
+      maxVersion: VersionTLS13
+      sniStrict: true
+
+  pilot:
+    enabled: false
+
+  logs:
+      general:
+          format: json
+      access:
+          enabled: true
+          format: json
+
+  metrics:
+      prometheus:
+          enabled: true
+          entryPoint: metrics
+
+  affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                     - traefik
+              topologyKey: "kubernetes.io/hostname"
+
+  autoscaling:
+      enabled: false
+  #     minReplicas: 1
+  #     maxReplicas: 10
+  #     metrics:
+  #     - type: Resource
+  #       resource:
+  #         name: cpu
+  #         targetAverageUtilization: 60
+  #     - type: Resource
+  #       resource:
+  #         name: memory
+  #         targetAverageUtilization: 60

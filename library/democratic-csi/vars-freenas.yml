@@ -1,0 +1,82 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+
+helmChart:
+  repo: https://democratic-csi.github.io/charts/
+  chartName: democratic-csi
+  chartVersion: 0.14.15
+  releaseName: democratic-csi
+  namespace: sys
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+secrets:
+  cluster:
+kustomize:
+  namespace: sys
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: democratic-csi
+  resources:
+    - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+
+context:
+
+  driver:
+    config:
+      #httpConnection: # secrets
+        # protocol: http
+        # username: democratic-csi
+        # password: xxxx
+        # host: 192.168.0.4
+        # port: 80
+        # allowInsecure: true
+
+      driver: freenas-api-nfs
+      zfs:
+        datasetParentName: hdd/k8s/vols
+        detachedSnapshotsDatasetParentName: hdd/k8s/snaps
+        datasetEnableQuotas: true
+        datasetEnableReservation: false
+        datasetPermissionsMode: "0777"
+        datasetPermissionsUser: 0
+        datasetPermissionsGroup: 0
+      nfs:
+        shareCommentTemplate: "{{ parameters.[csi.storage.k8s.io/pvc/namespace] }}-{{ parameters.[csi.storage.k8s.io/pvc/name] }}"
+        shareHost: 192.168.0.4
+        shareAlldirs: false
+        shareAllowedHosts: []
+        shareAllowedNetworks: []
+        shareMaprootUser: root
+        shareMaprootGroup: root
+        shareMapallUser: ""
+        shareMapallGroup: ""
+   
+  node:
+    # Required for MicroK8s
+    kubeletHostPath: /var/snap/microk8s/common/var/lib/kubelet
+   
+  csiDriver:
+    # should be globally unique for a given cluster
+    name: "org.democratic-csi.nfs-api"
+   
+  storageClasses:
+    - name: truenas
+      defaultClass: true
+      reclaimPolicy: Retain
+      volumeBindingMode: Immediate
+      allowVolumeExpansion: true
+      parameters:
+        fsType: nfs
+      mountOptions:
+        - noatime
+        - nfsvers=4
+   
+  volumeSnapshotClasses:
+    - name: truenas
+         
+

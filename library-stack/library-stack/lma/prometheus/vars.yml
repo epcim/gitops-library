@@ -1,0 +1,154 @@
+# vim: ft=yaml.jinja2 syntax=yaml sts=2 ts=2 sw=2
+
+helmChart:
+# renovate: registryUrl=https://prometheus-community.github.io/helm-charts
+  repo: https://prometheus-community.github.io/helm-charts
+  chartName: kube-prometheus-stack
+  chartVersion: 56.2.1
+  releaseName: prometheus
+  namespace: mon
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+  #updateConstraints: ~36.6
+
+#defaultRules:
+# https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml#L33
+
+kustomize:
+  namespace: mon
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: prometheus
+  resources:
+  - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+context:
+  fullnameOverride: prometheus-stack
+
+  prometheusOperator:
+    createCustomResource: true
+    # prometheusConfigReloaderImage:
+    #   repository: quay.io/coreos/prometheus-config-reloader
+    #   tag: v0.39.0
+    # configmapReloadImage:
+    #   repository: jimmidyson/configmap-reload
+    #   tag: v0.4.0
+    prometheusConfigReloader:
+      resources:
+        limits:
+          cpu: 200m
+    admissionWebhooks:
+      enabled: false
+    tls:               # required for disabled webhooks
+      enabled: false   # OK for non-prod deployments
+
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: longhorn
+            resources:
+              requests:
+                storage: 10Gi
+      tolerations:
+      - key: "arm"
+        operator: "Exists"
+      #podMetadata:
+      #  annotations:
+      #    backup.velero.io/backup-volumes: alertmanager-kube-prometheus-stack-alertmanager-db
+      podAntiAffinity: "hard"
+
+
+    # https://prometheus.io/docs/alerting/configuration/#configuration-file
+    # https://prometheus.io/webtools/alerting/routing-tree-editor/
+    config:
+      global:
+        resolve_timeout: 5m
+        http_config:
+
+      receivers:
+      - name: blackhole-receiver
+
+
+    ### CONFIG SECTIION ###
+      route:
+        group_by: ['alertname', 'job']
+        ## group_wait: 30s
+        ## group_interval: 5m
+        ## repeat_interval: 6h
+        receiver: blackhole-receiver
+        routes:
+        - matchers:
+          - severity =~ "warning|critical"
+          receiver: discord
+          continue: true
+      inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        # Apply inhibition if the alertname is the same.
+        equal: ['alertname', 'namespace']
+      templates: ["*.tmpl"]
+
+  ###
+  nodeExporter:
+    enabled: true
+
+  prometheus-node-exporter:
+    prometheus:
+      monitor:
+        enabled: true
+        relabelings:
+          - action: replace
+            regex: (.*)
+            replacement: $1
+            sourceLabels:
+              - __meta_kubernetes_pod_node_name
+            targetLabel: instance
+    #tolerations:
+    #- key: "arm"
+    #  operator: "Exists"
+    #- key: "armhf"
+    #  operator: "Exists"
+    #- key: "node-role.kubernetes.io/master"
+    #  operator: "Exists"
+
+  ###
+  grafana:
+    enabled: true
+    forceDeployDashboards: true
+
+  ###
+  prometheus:
+    prometheusSpec:
+      # image:
+      #   repository: quay.io/prometheus/prometheus
+      #   tag: v2.20.0
+      replicas: 1
+      replicaExternalLabelName: "replica"
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+      ruleSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
+      podMonitorNamespaceSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+      retention: 48h
+      enableAdminAPI: true
+      walCompression: true
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            #storageClassName: default
+            resources:
+              requests:
+                storage: 10Gi

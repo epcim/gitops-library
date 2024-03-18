@@ -1,0 +1,19 @@
+#https://www.home-assistant.io/integrations/mikrotik/
+#
+mikrotik:
+    - name: Mikrotik
+      host: 192.168.96.1
+      username: hass
+      password: {{ secrets.hass.integration.mikrotik1.password }}
+      arp_ping: true
+      force_dhcp: true
+      detection_time: 300
+      track_devices: true
+    - name: Mikrotik
+      host: 192.168.97.245
+      username: hass
+      password: {{ secrets.hass.integration.mikrotik2.password }}
+      arp_ping: true
+      force_dhcp: true
+      detection_time: 300
+      track_devices: true

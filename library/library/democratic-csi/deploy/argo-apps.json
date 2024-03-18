@@ -1,0 +1,7 @@
+[
+  {
+    "name":"democratic-csi",
+    "namespace": "sys",
+    "cluster": "in-cluster"
+  }
+]

@@ -1,0 +1,22 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: unifi
+  namespace: home
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: HostRegexp(`{app:(unifi)}.{{ args.domain }}`) #&& Headers(`Content-Type`, `application/http`)
+    services:
+    - name: unifi-main
+      #port: 
+      namespace: home
+  tls:
+    certResolver: cloudflare
+    domains:
+    - main: {{ args.domain }}
+      sans:
+      - unifi.{{ args.domain }}
+

@@ -1,0 +1,148 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+
+# https://gitea.com/gitea/helm-chart/src/branch/master/values.yaml
+helmChart:
+  # renovate: registryUrl=https://dl.gitea.io/charts/
+  repo: https://dl.gitea.io/charts/
+  chartName: gitea
+  chartVersion: 7.0.4
+  releaseName: gitea
+  namespace: gitops
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+
+# secrets:
+#   cluster:
+#     vips:
+#       gitea:
+#   infra:
+#     admin:
+#       email:
+
+kustomize:
+  namespace: gitops
+  labels:
+  - includeSelectors: true
+    pairs:
+      #nm: gitea
+      app: gitea
+  generatorOptions:
+    disableNameSuffixHash: true
+  resources:
+  - helm-rendered.yaml
+  - ./config/gitea-app-ini-database.yaml
+  - ./config/gitea-admin.yaml
+  {%- for item in get_var("overlays", []) %}
+  - {{item}}
+  {%- endfor %}
+
+context:
+  service:
+    ssh:
+      type: LoadBalancer
+      #loadBalancerIP: {{ secrets.cluster.vip.gitea }} # FIXME
+      port: "22"
+      annotations:
+        traefik.http.services.gitea_ssh.loadbalancer.server.port: 22
+        traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+        traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+        traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+    http:
+      port: 3000
+  gitea:
+    admin:
+      existingSecret: gitea-admin
+    additionalConfigSources:
+    - secret:
+        secretName: gitea-app-ini-database
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: false # require ServiceMonitor CRD
+    config:
+      APP_NAME: "Gitea"
+      admin:
+        email: "it@example.com"
+      server:
+        DOMAIN: gitea.{{ args.domain }}
+        SSH_LISTEN_PORT: 22
+        SSH_PORT: 22
+      database:
+        DB_TYPE: postgres
+        HOST: gitea-postgresql.gitops.svc
+      cache:
+        ADAPTER: memcache
+        ENABLED: true
+        HOST: gitea-memcached.gitops.svc:11211
+      http:
+        port: 3000
+      ssh:
+      #https://gitea.com/gitea/helm-chart/#ssh-and-ingress
+        type: LoadBalancer
+        port: "22"
+        annotations:
+          traefik.http.services.gitea_ssh.loadbalancer.server.port: 22
+          traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+          traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+          traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+    persistence:
+      enabled: true
+      #storageClass: "microk8s-hostpath"
+      storageClass: "longhorn"
+      size: 10Gi
+
+    # FIXME, use inbuild ingress setup
+    #ingress:
+    #  enabled: false
+    #  annotations:
+    #    #kubernetes.io/tls-acme: "true"
+    #    #kubernetes.io/ingress.class: "traefik-cert-manager"
+    #    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    #    traefik.ingress.kubernetes.io/router.priority: "10"
+    #    #cert-manager.io/cluster-issuer: ca-issuer
+    #    traefik.http.services.gitea_ssh.loadbalancer.server.port: 30022
+    #    traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+    #    traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+    #    traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+    #  #tls:
+    #  #  - secretName: "gitea-apealive"
+    #  hosts:
+    #  - host: "gitea.apealive.net"
+    #    paths:
+    #    - path: /
+    #      pathType: Prefix
+    #  - host: "git.apealive.net"
+    #    paths:
+    #    - path: /
+    #      pathType: Prefix
+    hostNetwork: true
+    probes:
+      liveness:
+        enabled: false
+      readiness:
+        enabled: false
+
+  postgresql:
+    enabled: true
+    volumePermissions:
+      enabled: true
+    namespace: gitops
+    global:
+      postgresql:
+        # port must be configured for initContainer to pass the check
+        servicePort: 5432
+    persistence:
+      size: 6Gi
+    auth:
+      postgresPassword: {{ secrets.gitea.postgres.password }}
+
+  # to deploy database by helm chart
+  database:
+    builtIn:
+      postgresql:
+        enabled: true
+
+

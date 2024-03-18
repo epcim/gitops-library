@@ -1,0 +1,7 @@
+[
+  {
+    "name": "minio",
+    "namespace": "sys",
+    "cluster": "in-cluster"
+  }
+]

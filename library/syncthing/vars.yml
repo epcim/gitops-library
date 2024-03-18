@@ -1,0 +1,90 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+
+helmChart:
+  repo: https://bjw-s.github.io/helm-charts
+  chartName: app-template
+  chartVersion: 1.3.2
+  releaseName: syncthing
+  namespace: sys
+  skipCRDs: True
+  skipPrePull: True
+  #skipUpdate: False
+
+
+kustomize:
+  namespace: media
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: syncthing
+  resources:
+  - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+
+context:
+  # https://github.com/k8s-at-home/charts/blob/master/charts/stable/syncthing/values.yaml
+  
+  # with chart 2.x.x
+  # controllers:
+  #   main:
+  #     containers:
+  #       main:
+  #         image:
+  #           repository: syncthing/syncthing
+  #           tag: latest
+  #           pullPolicy: IfNotPresent
+  #
+  #         probes:
+  #           liveness:
+  #             enabled: false
+  #           readiness:
+  #             enabled: false
+  #           startup:
+  #             enabled: false
+
+  image:
+    repository: syncthing/syncthing
+    tag: latest
+
+  service:
+    main:
+      ports:
+        http:
+          port: 8384
+    listen:
+      enabled: true
+      type: LoadBalancer
+      # https://kubernetes.io/docs/tutorials/services/source-ip/
+      externalTrafficPolicy: Local # Cluster
+      ports:
+        listen:
+          enabled: true
+          port: 22000
+          protocol: TCP
+          targetPort: 22000
+    discovery:
+      enabled: true
+      type: LoadBalancer
+      externalTrafficPolicy: Local # Cluster
+      ports:
+        discovery:
+          enabled: true
+          port: 21027
+          protocol: UDP
+          targetPort: 21027
+
+  persistence:
+    data:
+      enabled: true
+      #storageClass: "default"
+      size: 10Gi
+      accessMode: ReadWriteOnce
+
+      mountPath: /var/syncthing
+      # globalMounts:
+      # - path: /var/syncthing
+      #   readOnly: false
+
+

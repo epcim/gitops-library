@@ -1,0 +1,8 @@
+namespace: goproxy
+resources:
+- pvc.yml
+- deploy.yml
+
+#images:
+#- name: gitlab/gitlab-runner
+#  newTag: v14.2.0

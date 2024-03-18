@@ -1,0 +1,18 @@
+kustomize:
+  patches:
+  #- target:
+  #    version: .*
+  #    kind: StatefulSet
+  #    name: gitea
+  #  patch: |-
+  #    - op: remove
+  #      path: /spec/template/spec/initContainers/0/env/2/value
+  - target:
+      version: .*
+      kind: (StatefulSet|Deployment)
+      name: gitea.*
+    patch: |-
+      - op: add
+        path: /spec/template/spec/nodeSelector
+        value: 
+          type: main

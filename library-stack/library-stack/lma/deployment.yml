@@ -1,0 +1,58 @@
+# https://kluctl.io/docs/kluctl/reference/deployments/deployment-yml/
+deployments: 
+  - include: ./loki
+    args: {{ args }}
+    passVars: true
+    vars:
+    - values:
+        kustomize:
+          namespace: mon
+  - include: ./thanos
+    args: {{ args }}
+    passVars: true
+    vars:
+    - values:
+        kustomize:
+          namespace: mon
+  - barrier: true
+
+  - include: ./prometheus # kube stack
+    args: {{ args }}
+    passVars: true
+    vars:
+    - values:
+        kustomize:
+          namespace: mon
+  - include: ./falco
+    args: {{ args }}
+    passVars: true
+    vars:
+    - values:
+        kustomize:
+          namespace: mon
+  - include: ./grafana
+    args: {{ args }}
+    passVars: true
+    vars:
+    - values:
+        kustomize:
+          namespace: mon
+
+  # FIXME change to GIT include
+  - include: ../../library/minio
+    args: {{ args }}
+    vars:
+    - values:
+        context: {{ context_lma.minio_mon }}
+        secrets: {{ secrets.minio_mon }}
+        helmChart:
+          releaseName: minio-mon
+        kustomize:
+          namespace: mon
+          labels:
+          - includeSelectors: true
+            pairs:
+              ins: minio-mon
+          replicas:
+          - name: minio-mon
+            count: 1

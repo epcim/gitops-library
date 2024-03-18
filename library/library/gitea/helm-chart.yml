@@ -1,0 +1,2 @@
+helmChart: 
+  {{ helmChart | to_yaml | indent(2) }}

@@ -1,0 +1,32 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hass-server
+  namespace: home
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: HostRegexp(`app:(hass).{{ args.domain}}`)
+    priority: 10
+    services:
+    - name: hass-home-assistant
+      port: 8123
+      namespace: home
+  - kind: Rule
+    match: HostRegexp(`app:(hass).{{ args.domain }}`) && Headers(`Content-Type`, `application/grpc`)
+    priority: 11
+    services:
+    - name: hass-home-assistant
+      port: 8123
+      scheme: h2c
+      namespace: home
+  tls:
+    #certResolver: cloudflare
+    domains:
+    - main: {{ args.domain }}
+      sans:
+      - h.{{ args.domain }}
+      - hass.{{ args.domain }}
+      - homeassistant.{{ args.domain }}

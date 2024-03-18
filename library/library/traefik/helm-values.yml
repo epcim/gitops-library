@@ -1,0 +1,6 @@
+# https://github.com/longhorn/charts/blob/master/charts/longhorn/values.yaml
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+
+{{ context | to_yaml }}
+
+

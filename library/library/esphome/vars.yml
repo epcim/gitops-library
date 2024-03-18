@@ -1,0 +1,23 @@
+helmChart:
+  repo: https://bjw-s.github.io/helm-charts
+  chartName: app-template
+  chartVersion: 1.3.2
+  releaseName: esphome
+  namespace: sys
+  skipCRDs: True
+  skipPrePull: True
+  #skipUpdate: False
+
+
+kustomize:
+  namespace: iot
+
+  resources:
+  - helm-rendered.yaml
+
+  images:
+  - name: esphome/esphome
+    newTag: stable
+ 
+
+context:

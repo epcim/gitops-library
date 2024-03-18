@@ -1,0 +1,41 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+
+helm:
+  chart:
+    common:
+
+helmChart:
+  # renovate: registryUrl=https://bjw-s.github.io/helm-charts
+  repo: https://bjw-s.github.io/helm-charts
+  chartName: app-template
+  chartVersion: 1.3.2
+  releaseName: octoprint
+  namespace: home
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+secrets:
+
+kustomize:
+  namespace: home
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: octoprint
+  replicas:
+  - name: octoprint
+    count: 1
+  resources:
+    - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+
+octoprint:
+  appname: octoprint
+  persistence:
+    printer:
+      name: prusa
+

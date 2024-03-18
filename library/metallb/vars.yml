@@ -1,0 +1,24 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+kustomize:
+  namespace: metallb
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: metallb
+  resources:
+  - github.com/metallb/metallb/config/native?ref=v0.13.9
+  - config/pools.yaml
+
+context:
+  namespace: metallb-system
+
+  l2advertisement:
+  - default-pool
+  - servers-pool
+  ipaddresspool:
+    servers-pool: []
+    #- 172.31.1.32/27
+    default-pool: []
+    # - 172.31.2.32/27
+    # - 172.31.5.32/27

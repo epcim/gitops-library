@@ -1,0 +1,14 @@
+# file is only used when foler/git included as kluctl.io sub-deployment
+# order and nooverride is intentional, passed vars must take precendece
+
+deployments:
+- path: ../octoprint
+  vars:
+  # env specific setup (prod|test|ci)
+  - file: vars-{{ args.env }}.yml
+    ignoreMissing: true
+    noOverride: true
+  # example defaults
+  - file: vars.yml
+    ignoreMissing: true
+    noOverride: true

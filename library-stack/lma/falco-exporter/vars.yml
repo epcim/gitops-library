@@ -1,0 +1,35 @@
+
+helmChart:
+  # renovate: registryUrl=https://falcosecurity.github.io/charts
+  repo: https://falcosecurity.github.io/charts
+  chartName: falco-exporter
+  chartVersion: 0.9.1
+  releaseName: falco-exporter
+  namespace: mon
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+kustomize:
+  namespace: mon
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: falco
+  resources:
+  - helm-rendered.yaml
+  generatorOptions:
+    disableNameSuffixHash: true
+
+context:
+  grafanaDashboard:
+    enabled: true
+    namespace: mon
+    #prometheusDatasourceName: Prometheus
+  prometheusRules:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+  podSecurityPolicy:
+    create: false
+

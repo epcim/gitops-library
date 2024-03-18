@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: goproxy
+  name: goproxy
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: goproxy
+  template:
+    metadata:
+      labels:
+        app: goproxy
+    spec:
+      containers:
+      - image: goproxy/goproxy
+        name: proxy
+        ports:
+        - containerPort: 8081
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 2
+            ephemeral-storage: 20Gi
+            memory: 1024Mi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 20Gi
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /go
+          name: cache
+      volumes:
+      - name: cache
+        persistentVolumeClaim:
+          claimName: goproxy-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goproxy
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app: goproxy

@@ -1,0 +1,25 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hajimari
+  namespace: home
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: HostRegexp(`{app:(p|portal|hajimari)}.{{ args.domain }}`) #&& Headers(`Content-Type`, `application/http`)
+    services:
+    - name: hajimari-main
+      #port: 
+      namespace: home
+  tls:
+    certResolver: cloudflare
+    domains:
+    - main: {{ args.domain }}
+      sans:
+      - hajimari.{{ args.domain }}
+      - portal.{{ args.domain }}
+      - p.{{ args.domain }}
+
+  # doc https://www.reddit.com/r/Traefik/comments/lpkexu/traefi_v2_and_hajimari_ssh_access_again/
