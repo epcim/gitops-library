@@ -1,0 +1,39 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+
+# https://github.com/vmware-tanzu/helm-charts/tree/main/charts/velero 
+helmChart:
+  # renovate: registryUrl=https://vmware-tanzu.github.io/helm-charts
+  repo: https://vmware-tanzu.github.io/helm-charts
+  chartName: velero
+  chartVersion: 8.2.0
+  releaseName: velero
+  namespace: ops
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+kustomize:
+  namespace: velero
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: velero
+  generatorOptions:
+    disableNameSuffixHash: true
+  resources:
+  - helm-rendered.yaml
+
+context:
+  image:
+    repository: velero/velero
+  credentials:
+    #name: velero2minio
+    useSecret: true
+    secretContents:
+      cloud: |
+        [default]
+        aws_access_key_id={{ secrets.accessKey }}
+        aws_secret_access_key={{ secrets.secretKey }}
+
+

@@ -1,0 +1,22 @@
+# vim: set ft=helm.jinja:syntax=on
+# file is only used when foler/git included as kluctl.io sub-deployment
+# order and noOverride is intentional, passed Vars must take precendece
+
+deployments:
+- path: ../velero
+  vars:
+  # configuration per feature enabled in cluster
+  {% for feat in args.features %}
+  - file: vars-{{feat|first}}.yml
+    ignoreMissing: true
+    noOverride: true
+  {% endfor %}
+
+  # prod|staging|test
+  - file: vars-{{args.env}}.yml
+    ignoreMissing: true
+    noOverride: true
+
+  # defaults
+  - file: vars.yml
+    noOverride: true

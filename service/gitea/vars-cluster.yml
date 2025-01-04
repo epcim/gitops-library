@@ -1,0 +1,27 @@
+ #  postgresql-ha:
+ #    enabled: true
+ #    # volumePermissions:
+ #    #   enabled: true
+ #    global:
+ #      postgresql:
+ #        auth:
+ #          database: gitea
+ #          username: gitea
+ #          password: {{ secrets.gitea.postgresql.password }}
+ #    # DEFINE them conditionally
+ #    postgresql:
+ #        repmgrPassword: {{ secrets.gitea.postgresql.repmgrPassword }}
+ #    pgpool:
+ #      adminPassword: {{ secrets.gitea.postgresql.pgpoolAdminPassword }}
+ #    persistence:
+ #      size: 6Gi
+ #
+ #  postgresql:
+ #    enabled: false
+ #
+ #  redis-cluster:
+ #    enabled: true
+ #
+ #  redis:
+ #    enabled: false
+ # 

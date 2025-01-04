@@ -1,0 +1,167 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+
+# NOTE, this is for an example in this lib, not strictly requred to repeat on other services
+{% set domain = args.domain or context.config.server.DOMAIN or "example.com" -%}
+
+# https://gitea.com/gitea/helm-chart/src/branch/master/values.yaml
+helmChart:
+  # renovate: registryUrl=https://dl.gitea.io/charts/
+  # repo: https://dl.gitea.io/charts/
+  # chartName: gitea
+  # chartVersion: 10.6.0
+  git:
+    url: https://gitea.com/gitea/helm-chart # https://dl.gitea.io/charts/
+    ref:
+      branch: main
+      #commit: a79fd31f7e838c1c9f2cc671b5907a0fdabf4f2c
+  releaseName: gitea
+  namespace: gitops
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+
+# secrets:
+#   cluster:
+#     vips:
+#       gitea:
+#   infra:
+#     admin:
+#       email:
+
+kustomize:
+  namespace: gitops
+  labels:
+  - includeSelectors: true
+    pairs:
+      #nm: gitea
+      app: gitea
+  generatorOptions:
+    disableNameSuffixHash: true
+  resources:
+  - helm-rendered.yaml
+  - ./config/gitea-app-ini-database.yaml
+  - ./config/gitea-admin.yaml
+  {%- for item in get_var("overlays", []) %}
+  - {{item}}
+  {%- endfor %}
+
+context:
+  service:
+    ssh:
+      type: LoadBalancer
+      #loadBalancerIP: {{ secrets.cluster.vip.gitea }} # FIXME
+      port: "22"
+      annotations:
+        traefik.http.services.gitea_ssh.loadbalancer.server.port: 22
+        traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+        traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+        traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+    http:
+      port: 3000
+
+  gitea:
+    admin:
+      existingSecret: gitea-admin
+    additionalConfigSources:
+    - secret:
+        secretName: gitea-app-ini-database
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: false # require ServiceMonitor CRD
+    config:
+      APP_NAME: "Gitea"
+      admin:
+        email: "it@example.com"
+      server:
+        DOMAIN: gitea.{{ domain  }}
+        #SSH_LISTEN_PORT: 22
+        SSH_PORT: 22
+      database:
+        DB_TYPE: postgres
+        HOST: gitea-postgresql.gitops.svc
+      cache:
+        ADAPTER: memcache
+        ENABLED: true
+        HOST: gitea-memcached.gitops.svc:11211
+      http:
+        port: 3000
+      ssh:
+        type: LoadBalancer
+        port: "22"
+        annotations:
+          traefik.http.services.gitea_ssh.loadbalancer.server.port: 22
+          traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+          traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+          traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+          #https://gitea.com/gitea/helm-chart/#ssh-and-ingress
+          metallb.universe.tf/allow-shared-ip: {{ secrets.cluster.vip.gitea }}
+
+    extraVolumes:
+      - name: gitea-themes
+        secret:
+          secretName: gitea-themes
+
+    extraVolumeMounts:
+      - name: gitea-themes
+        readOnly: true
+        mountPath: "/data/gitea/public/assets/css"
+
+  persistence:
+    enabled: true
+    #storageClass: "microk8s-hostpath"
+    storageClass: "longhorn"
+    size: 10Gi
+
+  ingress:
+    enabled: {% if args.ingress %}true{% endif %}
+    className:  {{ args.ingress }}
+    annotations:
+      #kubernetes.io/ingress.class: "traefik"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.priority: "10"
+      # traefik.http.services.gitea_ssh.loadbalancer.server.port: 22 # 30022
+      # traefik.tcp.routers.gitea-ssh.service: gitea-ssh
+      # traefik.tcp.routers.gitea-ssh.entrypoints: ssh
+      # traefik.tcp.routers.gitea-ssh.rule: "HostSNI(`*`)"
+      metallb.universe.tf/allow-shared-ip: {{ secrets.cluster.vip.gitea }}
+    hosts:
+    - host: gitea.{{ domain }}
+      paths:
+      - path: /
+        pathType: Prefix
+    - host: git.{{ domain }}
+      paths:
+      - path: /
+        pathType: Prefix
+    tls:
+    - hosts:
+      - gitea.{{ domain }}
+      - git.{{ domain }}
+
+  postgresql-ha:
+    enabled: false
+
+  postgresql:
+    enabled: true
+    global:
+      postgresql:
+        auth:
+          password: {{ secrets.gitea.postgresql.password }}
+          database: gitea
+          username: gitea
+      service:
+        ports:
+          postgresql: 5432
+    primary:
+      persistence:
+        size: 6Gi
+    volumePermissions:
+      enabled: true
+
+  redis-cluster:
+    enabled: false
+  redis:
+    enabled: false

@@ -1,0 +1,18 @@
+# https://carvel.dev/vendir/docs/v0.32.0/vendir-spec/
+apiVersion: vendir.k14s.io/v1alpha1
+kind: Config
+directories:
+
+- path: external
+  contents:
+  - path: ./kubernetes-csi-external-snapshoter
+    git: 
+      url: https://github.com/kubernetes-csi/external-snapshotter
+      ref: origin/v7.0.2
+      depth: 1
+    newRootPath: deploy/kubernetes/snapshot-controller
+    includePaths:
+    - deploy/kubernetes/snapshot-controller/*
+
+
+

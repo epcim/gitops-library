@@ -1,0 +1,23 @@
+
+kustomize:
+  namespace: iot
+
+  resources:
+  - helm-rendered.yaml
+  - ./overlays/ingressRoute-esphome.yaml
+
+  images:
+  - name: esphome/esphome
+    newTag: stable
+
+  patches:
+  - target:
+      version: .*
+      kind: (StatefulSet|Deployment)
+      name: .*
+    patch: |-
+      - op: add
+        path: /spec/template/spec/nodeSelector
+        value: 
+          type: main
+ 

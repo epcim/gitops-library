@@ -1,0 +1,19 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# file is only used when foler/git included as kluctl.io sub-deployment
+# order and noOverride is intentional, passed Vars must take precendece
+
+deployments:
+- path: ../longhorn # or just "." https://github.com/kluctl/kluctl/pull/545
+  vars:
+  # env specific setup (prod|test|ci)
+  - file: vars-{{ args.env }}.yml
+    ignoreMissing: true
+    noOverride: true
+  # example defaults
+  - file: vars.yml
+    ignoreMissing: true
+    noOverride: true
+
+# because Longhorn v1.7.2 uses CSI external-snapshotter v7.0.2
+# https://longhorn.io/docs/1.7.2/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/
+# - path: external/kubernetes-csi-external-snappshoter

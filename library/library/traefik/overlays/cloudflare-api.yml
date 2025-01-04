@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-    name: cloudflare-api
-    namespace: sys
-stringData: {{ secrets.traefik.resolver.cloudflare.tokens | default([]) }}

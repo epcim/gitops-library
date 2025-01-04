@@ -1,7 +1,0 @@
-args:
-- name: boostrap
-  default: true
-- name: env
-  default: ci
-- name: domain
-  default: example.com

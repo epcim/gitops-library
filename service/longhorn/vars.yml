@@ -1,0 +1,106 @@
+# vim: ft=yaml syntax=yaml sts=2 ts=2 sw=2
+# example configuration
+
+helmChart:
+  repo: https://charts.longhorn.io
+  chartName: longhorn
+  chartVersion: 1.4.1
+  releaseName: longhorn
+  namespace: longhorn-system
+  skipCRDs: False
+  skipPrePull: True
+  #skipUpdate: False
+
+secrets:
+    backup:
+      s3:
+        #access_key:
+        #secret_key:
+
+kustomize:
+  namespace: longhorn-system
+
+  labels:
+  - includeSelectors: true
+    pairs:
+      nm: longhorn
+  resources:
+    - helm-rendered.yaml
+
+    # TODO, move it to feature-vars/args
+    # because Longhorn v1.7.2 uses CSI external-snapshotter v7.0.2
+    # https://longhorn.io/docs/1.7.2/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/
+    # - github.com/kubernetes-csi/external-snapshotter/client/config/crd?ref=v7.0.2                      # these shall go to kube-system
+    # - github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/snapshot-controller?ref=v7.0.2  # these shall go to kube-system
+    - overlays/volumeSnapshotClass.yaml
+
+    # ALTERNATIVE
+    #- github.com/longhorn/longhorn/v1.4.1/deploy/longhorn.yaml?ref=master
+    # Opt, ingress (as might be needed before LB/Networiking is fully cofigured)
+  generatorOptions:
+    disableNameSuffixHash: true
+  commonAnnotations:
+    prometheus.io/port: "9500"
+
+context:
+  # csi:
+    # microk8s
+    # kubeletRootDir: "/var/snap/microk8s/common/var/lib/kubelet"
+
+  # INTERPOLATED Params
+  backupstore:
+    nfs:
+      path: /somePath
+      nodeSelector: ~
+
+  # HELM Values
+  installCRDs: true
+  fullnameOverride: longhorn
+
+  image:
+    pullPolicy: IfNotPresent
+
+  defaultSettings:
+    defaultDataPath: "/var/lib/longhorn"
+    backupTargetCredentialSecret: longhorn-backup
+    #backupTarget: s3://longhorn@minio-backup.sys.svc.cluster.local:9000/
+    #backupTarget: nfs://longhorn-nfs-svc.longhorn-system:{{ context.backupstore.nfs.path }} 
+    defaultReplicaCount: 3
+    defaultLonghornStaticStorageClass: longhorn
+    createDefaultDiskLabeledNodes: true
+    mkfsExt4Parameters: -O ^64bit,^metadata_csum
+
+    # DETACH ALL VOLUMES ON CHANGE !!
+    # https://longhorn.io/docs/1.2.3/advanced-resources/deploy/taint-toleration/
+    taintToleration: "hw=kvm:NoSchedule"
+
+
+  enablePSP: false
+
+  persistence:
+    defaultClass: false
+
+  ingress:
+    tls: false
+
+  longhornManager:
+    nodeSelector:
+      longhorn: "yes"
+  longhornDriver:
+    nodeSelector:
+      longhorn: "yes"
+
+  # FIXME define ingress
+  # ingress:
+  #   enabled: true
+  #   ingressClassName: "traefik"
+  #   annotations:
+  #     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  #     traefik.ingress.kubernetes.io/router.tls: "true"
+  #     hajimari.io/enable: "true"
+  #     hajimari.io/icon: shield-check
+  #     hajimari.io/group: network
+  #     hajimari.io/appName: longhorn
+  #   host: longhorn.apealive.net
+  #   tls: false
+
