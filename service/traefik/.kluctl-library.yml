@@ -5,3 +5,5 @@ args:
   default: ci
 - name: domain
   default: example.com
+- name: bootstrap
+  default: true

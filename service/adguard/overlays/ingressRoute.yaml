@@ -15,7 +15,7 @@ spec:
       port: 3000
       namespace: sys
   tls:
-    {%- if context.resolver.cloudflare is defined %}
+    {%- if context.traefik.resolver.cloudflare is defined %}
     certResolver: cloudflare
     {%- endif %}
     domains:

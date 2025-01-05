@@ -5,11 +5,20 @@
 deployments:
 - path: ../metallb # or just "." https://github.com/kluctl/kluctl/pull/545
   vars:
-  # env specific setup (prod|test|ci)
-  - file: vars-{{ args.env }}.yml
+  # configuration per feature enabled in cluster
+  {% for feat in args.features %}
+  - file: vars-{{feat|first}}.yml
     ignoreMissing: true
     noOverride: true
-  # example defaults
+  {% endfor %}
+
+  # prod|staging|test
+  - file: vars-{{args.env}}.yml
+    ignoreMissing: true
+    noOverride: true
+
+  # defaults
   - file: vars.yml
-    ignoreMissing: true
     noOverride: true
+
+
