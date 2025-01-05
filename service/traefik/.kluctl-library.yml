@@ -6,4 +6,4 @@ args:
 - name: domain
   default: example.com
 - name: bootstrap
-  default: true
+  default: false

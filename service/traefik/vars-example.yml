@@ -101,12 +101,12 @@ context:
     web2:
      port: 8200
      exposedPort: 8080
+     # expose:  {"default":true }
      redirectTo:
        port: websecure
     websecure:
        port: 8443
        exposedPort: 443
-       #http3: true # experimental
        expose: {"default":true}
        tls:
          enabled: true
