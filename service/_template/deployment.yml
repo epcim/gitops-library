@@ -3,7 +3,8 @@
 # order and noOverride is intentional, passed Vars must take precendece
 
 deployments:
-- path: ../.
+- path: ../_template_FIXME
+        # ^^ https://github.com/kluctl/kluctl/pull/545
   vars:
   # configuration per feature enabled in cluster
   {% for feat in args.features %}
