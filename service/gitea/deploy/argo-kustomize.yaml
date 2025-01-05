@@ -11,7 +11,7 @@ spec:
     server: https://kubernetes.default.svc
   source:
     path: cluster/gitops/gitea
-    repoURL: https://git.apealive.net/epcim/infra.git
+    repoURL: https://git.apealive.net/epcim/gitops-infra.git
     targetRevision: HEAD
     #kustomize:
       #version: v3.5.4

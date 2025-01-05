@@ -11,7 +11,7 @@ spec:
     server: https://kubernetes.default.svc
   source:
     path: envs/apealive/iot/esphome
-    repoURL: https://git.apealive.net/epcim/infra.git
+    repoURL: https://git.apealive.net/epcim/gitops-infra.git
     targetRevision: HEAD
     #kustomize:
       # Optional kustomize version. Note: version must be configured in argocd-cm ConfigMap
