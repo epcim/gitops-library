@@ -96,32 +96,47 @@ context:
     traefik:
       expose: {"default":false}
     web:
-      redirectTo:
-        port: websecure
+      # redirectTo:
+      #   port: websecure
+     redirections:
+       entryPoint:
+         to: websecure
+         scheme: https
+         permanent: true
     web2:
-     port: 8200
-     exposedPort: 8080
-     # expose:  {"default":true }
-     redirectTo:
-       port: websecure
+      port: 8200
+      exposedPort: 8080
+      # expose:  {"default":true }
+      # redirectTo:
+      #   port: websecure
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
     websecure:
-       port: 8443
-       exposedPort: 443
-       expose: {"default":true}
-       tls:
-         enabled: true
-         certResolver: cloudflare
-         domains:
-         - main: {{ args.domain }}
-           sans:
-           - "*.{{ args.domain }}"
+      port: 8443
+      exposedPort: 443
+      expose: {"default":true}
+      tls:
+        enabled: true
+        certResolver: cloudflare
+        domains:
+        - main: {{ args.domain }}
+          sans:
+          - "*.{{ args.domain }}"
     websecure2:
-       port: 8243
-       exposedPort: 8443
-       #http3: true # experimental
-       redirectTo:
-         port: websecure               # FIXME, vs. def. below
-       expose: {"default":true}
+      port: 8243
+      exposedPort: 8443
+      #http3: true # experimental
+      # redirectTo:
+      #   port: websecure               # FIXME, vs. def. below
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+      expose: {"default":true}
        # tls:
        #   enabled: true
        #   certResolver: cloudflare

@@ -5,7 +5,7 @@ helmChart:
   # renovate: registryUrl=https://helm.traefik.io/traefik
   repo: https://helm.traefik.io/traefik
   chartName: traefik
-  chartVersion: 33.2.1 # 26.0.0
+  chartVersion: 34.2.0 # 26.0.0
   releaseName: traefik
   namespace: sys
   skipCRDs: false
@@ -89,8 +89,11 @@ context:
       # -- You SHOULD NOT expose the traefik port on production deployments.
       expose: {"default":false}
     web:
-      redirectTo:
-        port: websecure
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
     websecure:
        port: 8443
        exposedPort: 443

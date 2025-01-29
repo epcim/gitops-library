@@ -4,7 +4,7 @@
 helmChart:
   repo: https://charts.longhorn.io
   chartName: longhorn
-  chartVersion: 1.4.1
+  chartVersion: 1.8.0
   releaseName: longhorn
   namespace: longhorn-system
   skipCRDs: False
@@ -64,7 +64,7 @@ context:
     defaultDataPath: "/var/lib/longhorn"
     backupTargetCredentialSecret: longhorn-backup
     #backupTarget: s3://longhorn@minio-backup.sys.svc.cluster.local:9000/
-    #backupTarget: nfs://longhorn-nfs-svc.longhorn-system:{{ context.backupstore.nfs.path }} 
+    #backupTarget: nfs://longhorn-nfs-svc.longhorn-system:{XXX context.backupstore.nfs.path }} 
     defaultReplicaCount: 3
     defaultLonghornStaticStorageClass: longhorn
     createDefaultDiskLabeledNodes: true
