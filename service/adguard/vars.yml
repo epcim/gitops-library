@@ -24,6 +24,7 @@ kustomize:
       app: adguard
   resources:
   - helm-rendered.yaml
+  #- ./overlays/ingressRoute.yaml
   generatorOptions:
     disableNameSuffixHash: true
 

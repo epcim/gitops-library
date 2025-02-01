@@ -8,18 +8,32 @@ kustomize:
     pairs:
       app: metallb
   resources:
-  - github.com/metallb/metallb/config/native?ref=v0.14.9
-  - config/pools.yaml
+  #- https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml # tag=v0.14.9
+  - https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-frr-k8s.yaml
+  #- github.com/metallb/metallb/config/native?ref=v0.14.9
+  - ./config/pools.yaml
+
+patches:
+  - target:
+      group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: bgppeers.metallb.io
+    patch: |
+        - op: remove
+          path: /spec/conversion/webhook/clientConfig/caBundle
+      # - op: add
+      #   path: "/metadata/annotations/kustomize.toolkit.fluxcd.io~1ssa"
+      #   value: "IfNotPresent"
+      # - op: add
+      #   path: "/metadata/annotations/kustomize.toolkit.fluxcd.io~1force"
+      #   value: "Disabled"
 
 context:
-  namespace: metallb-system
+  namespace: metallb
 
   l2advertisement:
   - default-pool
-  - servers-pool
   ipaddresspool:
-    servers-pool: []
-    #- 172.31.1.32/27
     default-pool: []
     # - 172.31.2.32/27
     # - 172.31.5.32/27

@@ -36,6 +36,7 @@ kustomize:
     disableNameSuffixHash: true
 
 
+# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
 context:
   appname: traefik
 
@@ -48,83 +49,71 @@ context:
       enabled: true
       allowCrossNamespace: false
       allowExternalNameServices: false
+      allowEmptyServices: true # return 503 when there is no endpoints available
+      # -- When the parameter is set, only resources containing an annotation with the same value are processed.
+      ingressClass: ""
+      # -- Selector, ie: environment=production,method=traefik
+      # labelSelector: environment=production,method=traefik
+      # -- Array of namespaces to watch. If left empty, Traefik watches all namespaces.
       namespaces: []
+
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: false
+    allowEmptyServices: true # return 503 when there is no endpoints available
+    # -- When ingressClass is set, only Ingresses containing an annotation with the same value are processed. Otherwise, Ingresses missing the annotation, having an empty value, or the value traefik are processed.
+    ingressClass:  # @schema type:[string, null]
+    # -- Selector, ie: environment=production,method=traefik
+    # labelSelector: environment=production,method=traefik
+    # -- Array of namespaces to watch. If left empty, Traefik watches all namespaces.
+    namespaces: []
+
+
+  # -- Create a default IngressClass for Traefik
+  ingressClass:
+    enabled: true
+    isDefaultClass: true
+    #fallbackApiVersion: v1
 
 
   globalArguments:
-  - "--global.checknewversion"
-  - "--entryPoints.websecure.http.tls=true"
-  - "--entryPoints.websecure2.http.tls=true" # FIXME
-  - "--providers.kubernetesingress.ingressclass=traefik"
-  - "--metrics.prometheus=true"
-  - "--metrics.prometheus.entryPoint=metrics"
+  #- "--global.checknewversion"
 
+  - --providers.kubernetesingress.ingressendpoint.ip={{ secrets.cluster.vip.traefik }}
+  - --providers.kubernetesingress.ingressclass=traefik
+
+  - --metrics.prometheus=true
+  - --metrics.prometheus.entryPoint=metrics
+
+  #- "--entryPoints.websecure.http.tls=true"
+  #- "--entryPoints.websecure2.http.tls=true" # FIXME
 
   persistence:
     name: data
     enabled: true
-    {% if not args.bootstrap %}
-    #existingClaim: 
-    {% endif %}
     path: /data
     size: 128Mi
+    accessMode: ReadWriteOnce
     storageClass: default
-    #storageClass: microk8s-hostpath
-    # annotations: {
-    #   "pv.beta.kubernetes.io/gid": "65532"
-    # }
-
 
 
   # Options for the main traefik service, where the entrypoints traffic comes from.
   service:
-      # spec:
-        # externalTrafficPolicy: Cluster # default
-        # loadBalancerIP: "172.31.2.50"
       enabled: true
+      single: true
       type: LoadBalancer
 
   ports:
     traefik:
       # -- You SHOULD NOT expose the traefik port on production deployments.
       expose: {"default":false}
-    web:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
-    websecure:
-       port: 8443
-       exposedPort: 443
-       expose:  {"default":true }
-       tls:
-         enabled: true
-         certResolver: cloudflare
-         domains:
-         - main: {{ args.domain }}
-           sans:
-           - "*.{{ args.domain }}"
     metrics:
         port: 8082
         expose:  {"default":true }
         exposedPort: 8082
 
-  # Since v29 deprecated - https://github.com/traefik/traefik-helm-chart/issues/85#issuecomment-2243082884
-  ingressRoute:
-    enabled: 
-      default: true
-    dashboard:
-      enabled: true
-      annotations: {}
-      labels: {}
   dashboard:
     enable: true
-
-  ingressClass:
-    enabled: true
-    isDefaultClass: true
-    #fallbackApiVersion: v1
 
   tlsOptions:
     default:
@@ -138,6 +127,7 @@ context:
   logs:
       general:
           format: json
+          level: TRACE
       access:
           enabled: true
           format: json

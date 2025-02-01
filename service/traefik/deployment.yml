@@ -1,6 +1,5 @@
 # file is oNLY USED WHEN FOLER/GIT INCLUDED AS KLUCTL.IO SUB-DEPLOYMENT
 # ORDER AND NOOVERRIDE IS INTENTIONAL, PASSED VARS MUST TAKE PRECENDECE
-
 deployments:
 - path: ../traefik # or just "." https://github.com/kluctl/kluctl/pull/545
   vars:

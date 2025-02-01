@@ -1,30 +1,22 @@
 context:
-  # Traefik team never resolved this, especially not with Longhorn
-  # !! ON FIRST DEPLOYMENT REMOVE POD SECURITY CONTEXT FROM DEPLOYMENT
-  {% if args.bootstrap %}
-  podSecurityContext: null
-  {% endif %}
-
   deployment:
     initContainers:
     # Related issue: https://github.com/traefik/traefik/issues/6972
     - name: volume-permissions
       image: busybox:latest
-      command: ["sh", "-xc", "id; ls -lahR /data; chmod -v 777 /data; touch /data/acme.json; chown 65532 -Rv /data;  chmod -Rv 600 /data/acme* || true"]
+      command: ["sh", "-xc", "id; ls -lahR /data; chmod -v 777 /data; chown 65532 -Rv /data; touch /data/acme.json; chmod -v 600 /data/acme* || true"]
       volumeMounts:
       - name: data
         mountPath: /data
 
 
   persistence:
-    name: data
     enabled: true
-    {% if not args.bootstrap %}
-    #existingClaim: 
-    {% endif %}
+    name: data
     path: /data
     size: 128Mi
     storageClass: default
+
     #storageClass: microk8s-hostpath
     # annotations: {
     #   "pv.beta.kubernetes.io/gid": "65532"
@@ -32,43 +24,141 @@ context:
 
 
 
-  # FIXME, SOME OF THESE MOVE TO DEFAULTARGS
+    # FIXME, SOME OF THESE MOVE TO DEFAULTARGS
   additionalArguments:
-  # This is needed because sys/unifi has self-signed certificate,
-  # we expose valid Letsencrypt certificate over port 443
-  - --serverstransport.insecureskipverify=true
-  # - "--api.insecure=true"
+    # This is needed because sys/unifi has self-signed certificate,
+    # we expose valid Letsencrypt certificate over port 443
+    - --serverstransport.insecureskipverify=true
 
-  # ping
-  #- --ping=false
+    ## Dashboard & API
+    # - "--api"
+    # - "--api.insecure=false" # production = false , development = true
+    # - "--api.dashboard=true"
 
-  # force cert renew
-  #- --certificatesresolvers.cloudflare.acme.certificatesduration=240
+    ## EntryPoints
+    # Unsecure Connection - Redirect to Secure
+    # - "--entrypoints.web.address=:8000"
+    # - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+    # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    # #- "--entrypoints.web.http.redirections.entrypoint.permanent=true"
 
-  # loadbalancer # NOT SURE WHETHER NEEDED, it already existed
-  - --providers.kubernetesingress.ingressendpoint.ip={{ secrets.cluster.vip.traefik }}
+    ## Secure Connection
+    # - "--entrypoints.websecure.address=:8443"
+    # - "--entrypoints.websecure.http.tls=true"
+    # - "--entrypoints.websecure.http.tls.certresolver=cloudflare"
+    # - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=420"
+    # - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=420"
+    # - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=420"
 
-  # letsEncrypt
+    # letsEncrypt
+    # #- --certificatesresolvers.cloudflare.acme.certificatesduration=240
+    # - --certificatesresolvers.cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+    # #- --certificatesresolvers.cloudflare.acme.caServer=https://acme-v02.api.letsencrypt.org/directory
+    # - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+    # - --certificatesresolvers.cloudflare.acme.email={{ context.resolver.cloudflare.acme.email }}
+    # - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1
+    # - --certificatesresolvers.cloudflare.acme.storage=/data/acme.json
+    # # domains
+    # - --entrypoints.websecure.http.tls.domains[0].main={{ args.domain }}
+    # - --entrypoints.websecure.http.tls.domains[0].sans=*.{{ args.domain }}
+    # - --entrypoints.websecure2.http.tls.certresolver=cloudflare
+    # - --entrypoints.websecure2.http.tls.domains[0].main={{ args.domain }}
+    # - --entrypoints.websecure2.http.tls.domains[0].sans=*.{{ args.domain }}
+
+
+    ## Telemetry
+    - "--global.sendAnonymousUsage=false"
+
+    ## Acess
+    - --accesslog=true
+
+    ## Other
+    - "--serversTransport.insecureSkipVerify=true"
+    #- --set podSecurityContext.fsGroup=null
+    #- --ping=false
+
+  service:
+      annotations: {}
+      annotationsTCP: {}
+      annotationsUDP: {}
+      external-dns.alpha.kubernetes.io/hostname: "ipv4.${{ args.domain }}"
+      loadBalancerSourceRanges:
+      - 172.31.5.0/28
+      - 172.31.2.0/28
+      #externalIPs:
+      # - 172.31.2.50
+
+  ports:
+    traefik:
+      expose: {"default":true} # FIXME
+
+    web:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+    # web2:
+    #   port: 8200
+    #   exposedPort: 8080
+    #   # expose:  {"default":true }
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+    #       permanent: true
+
+    websecure:
+      port: 8443
+      exposedPort: 443
+      expose: {"default":true }
+      tls:
+        enabled: true
+        certResolver: cloudflare
+        domains:
+        - main: {{ args.domain }}
+          sans:
+          - "*.{{ args.domain }}"
+
+    # websecure2: # This is for UNIFI only
+    #   port: 8243
+    #   exposedPort: 8443
+    #   expose: {"default":true}
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+    #       permanent: true
+    #
+    #   tls:
+    #     enabled: true
+    #     certResolver: cloudflare
+    #     domains:
+    #     - main: {{ args.domain }}
+    #       sans:
+    #       - "*.{{ args.domain }}"
+
+    # for gitea
+    ssh:
+        port: 8222
+        exposedPort: 22
+        expose: {"default":true }
+
+  certificatesResolvers:
+    cloudflare:
+      acme:
+        email: {{ context.resolver.cloudflare.acme.email }}
+        #caServer: https://acme-staging-v02.api.letsencrypt.org/directory  # for test
+        caServer: https://acme-v02.api.letsencrypt.org/directory           # production
+        dnsChallenge:
+          provider: cloudflare
+          resolvers: 1.1.1.1
+          #delayBeforeCheck: 0
+        storage: /data/acme.json
   {%- if context.resolver.cloudflare is defined %}
-  #- --certificatesresolvers.cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
-  - --certificatesresolvers.cloudflare.acme.caServer=https://acme-v02.api.letsencrypt.org/directory
-  - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
-  - --certificatesresolvers.cloudflare.acme.email={{ context.resolver.cloudflare.acme.email }}
-  - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1
-  - --certificatesresolvers.cloudflare.acme.storage=/data/acme.json
-
-  # entrypoints
-  - --entrypoints.websecure.http.tls.certresolver=cloudflare
-  - --entrypoints.websecure.http.tls.domains[0].main={{ args.domain }}
-  - --entrypoints.websecure.http.tls.domains[0].sans=*.{{ args.domain }}
-  - --entrypoints.websecure2.http.tls.certresolver=cloudflare
-  - --entrypoints.websecure2.http.tls.domains[0].main={{ args.domain }}
-  - --entrypoints.websecure2.http.tls.domains[0].sans=*.{{ args.domain }}
   {%- endif %}
-  #
-  - --accesslog=true
-  #- --set podSecurityContext.fsGroup=null # TO TEST
-  #
+  
   {%- if context.resolver.cloudflare is defined %}
   env:
     - name: CF_API_EMAIL
@@ -80,72 +170,32 @@ context:
           key: {{ args.domain }}
   {%- endif %}
 
-  service:
-      annotations: {}
-        # external-dns.alpha.kubernetes.io/hostname: "ipv4.${SECRET_DOMAIN}"
-      #loadBalancerSourceRanges:
-      # - 172.31.5.0/28
-      # - 172.31.2.0/28
-      # externalIPs:
-      # - 172.31.5.
-      # - 172.31.2.
-      # - 172.31.1.
-      # - 192.168.124.1
-      #
-  ports:
-    traefik:
-      expose: {"default":false}
-    web:
-      # redirectTo:
-      #   port: websecure
-     redirections:
-       entryPoint:
-         to: websecure
-         scheme: https
-         permanent: true
-    web2:
-      port: 8200
-      exposedPort: 8080
-      # expose:  {"default":true }
-      # redirectTo:
-      #   port: websecure
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
-    websecure:
-      port: 8443
-      exposedPort: 443
-      expose: {"default":true}
-      tls:
-        enabled: true
-        certResolver: cloudflare
-        domains:
-        - main: {{ args.domain }}
-          sans:
-          - "*.{{ args.domain }}"
-    websecure2:
-      port: 8243
-      exposedPort: 8443
-      #http3: true # experimental
-      # redirectTo:
-      #   port: websecure               # FIXME, vs. def. below
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
-      expose: {"default":true}
-       # tls:
-       #   enabled: true
-       #   certResolver: cloudflare
-       #   domains:
-       #   - main: {{ args.domain }}
-       #     sans:
-       #     - "*.{{ args.domain }}"
-    ssh:
-        #protocol: TCP
-        port: 8222
-        exposedPort: 22
-        expose: {"default":true}
+
+  # Traefik team never resolved this, especially not with Longhorn
+  # !! ON FIRST DEPLOYMENT REMOVE POD SECURITY CONTEXT FROM DEPLOYMENT
+  {% if args.bootstrap %}
+  podSecurityContext: null             # FIXME
+  {%- else %}
+  podSecurityContext:
+    runAsGroup: 65532
+    runAsNonRoot: true
+    runAsUser: 65532
+  {%- endif %}
+  securityContext:
+    readOnlyRootFilesystem: true
+  #   allowPrivilegeEscalation: false
+  #   capabilities:
+  #     drop: [ALL]
+  #     #add: [NET_BIND_SERVICE]
+
+
+  # Since v29 deprecated - https://github.com/traefik/traefik-helm-chart/issues/85#issuecomment-2243082884
+  # ingressRoute:
+  #   enabled: 
+  #     default: false
+  #   dashboard:
+  #     enabled: true
+  #     annotations: {}
+  #     labels: {}
+
+

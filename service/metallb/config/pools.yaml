@@ -17,4 +17,17 @@ metadata:
   namespace: metallb
 spec:
   addresses: {{value}}
+# ---
+# apiVersion: metallb.io/v1beta1
+# kind: BGPAdvertisement
+# metadata:
+#   name: local
+#   namespace: metallb
+# spec:
+#   ipAddressPools:
+#   - {{key}}
+#   aggregationLength: 32
+#   # localPref: 100
+#   # communities:
+#   # - 65535:65282
 {%- endfor %}
