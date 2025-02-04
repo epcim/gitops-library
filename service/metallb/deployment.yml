@@ -21,4 +21,9 @@ deployments:
   - file: vars.yml
     noOverride: true
 
+- barrier: true
+- path: ../metallb/config # must come after metallb
+  tags: 
+  - metallb
+
 

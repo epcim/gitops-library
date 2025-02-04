@@ -6,14 +6,14 @@
 # https://gitea.com/gitea/helm-chart/src/branch/master/values.yaml
 helmChart:
   # renovate: registryUrl=https://dl.gitea.io/charts/
-  # repo: https://dl.gitea.io/charts/
-  # chartName: gitea
-  # chartVersion: 10.6.0
-  git:
-    url: https://gitea.com/gitea/helm-chart # https://dl.gitea.io/charts/
-    ref:
-      branch: main
-      #commit: a79fd31f7e838c1c9f2cc671b5907a0fdabf4f2c
+  repo: https://dl.gitea.io/charts/
+  chartName: gitea
+  chartVersion: 10.6.0
+  # git:
+  #   url: https://gitea.com/gitea/helm-chart # https://dl.gitea.io/charts/
+  #   ref:
+  #     branch: main # v10.6.0
+  #     #commit: a79fd31f7e838c1c9f2cc671b5907a0fdabf4f2c
   releaseName: gitea
   namespace: gitops
   skipCRDs: False
@@ -47,6 +47,8 @@ kustomize:
   {%- endfor %}
 
 context:
+  # global:
+  #   storageClass: "longhorn"
   service:
     ssh:
       type: LoadBalancer

@@ -51,7 +51,7 @@ context:
       allowExternalNameServices: false
       allowEmptyServices: true # return 503 when there is no endpoints available
       # -- When the parameter is set, only resources containing an annotation with the same value are processed.
-      ingressClass: ""
+      #ingressClass: "traefik"
       # -- Selector, ie: environment=production,method=traefik
       # labelSelector: environment=production,method=traefik
       # -- Array of namespaces to watch. If left empty, Traefik watches all namespaces.
@@ -62,7 +62,7 @@ context:
     allowExternalNameServices: false
     allowEmptyServices: true # return 503 when there is no endpoints available
     # -- When ingressClass is set, only Ingresses containing an annotation with the same value are processed. Otherwise, Ingresses missing the annotation, having an empty value, or the value traefik are processed.
-    ingressClass:  # @schema type:[string, null]
+    #ingressClass: "traefik" # @schema type:[string, null]
     # -- Selector, ie: environment=production,method=traefik
     # labelSelector: environment=production,method=traefik
     # -- Array of namespaces to watch. If left empty, Traefik watches all namespaces.
@@ -100,7 +100,7 @@ context:
   # Options for the main traefik service, where the entrypoints traffic comes from.
   service:
       enabled: true
-      single: true
+      single: false                # listen on both, tcp/udp # FIXME
       type: LoadBalancer
 
   ports:

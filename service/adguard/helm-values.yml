@@ -19,7 +19,7 @@ common:
       # existingClaim:
       # size: 1Gi
       mountPath: /opt/adguardhome/conf
-      storageClass: longhorn-static
+      storageClass: longhorn
       accessMode: ReadWriteOnce
     data:
       enabled: false

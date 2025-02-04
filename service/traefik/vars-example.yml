@@ -4,7 +4,7 @@ context:
     # Related issue: https://github.com/traefik/traefik/issues/6972
     - name: volume-permissions
       image: busybox:latest
-      command: ["sh", "-xc", "id; ls -lahR /data; chmod -v 777 /data; chown 65532 -Rv /data; touch /data/acme.json; chmod -v 600 /data/acme* || true"]
+      command: ["sh", "-xc", "id; ls -lahR /data; chmod -v 777 /data; chown 65532 -Rv /data; touch /data/acme.json; chown 65532 -Rv /data; chmod -v 600 /data/acme* || true"]
       volumeMounts:
       - name: data
         mountPath: /data
@@ -83,10 +83,13 @@ context:
       annotationsUDP: {}
       external-dns.alpha.kubernetes.io/hostname: "ipv4.${{ args.domain }}"
       loadBalancerSourceRanges:
-      - 172.31.5.0/28
-      - 172.31.2.0/28
-      #externalIPs:
-      # - 172.31.2.50
+      - 172.31.0.0/12
+      - 192.168.0.0/16
+      - 10.0.0.0/8
+      # externalIPs:
+      # - 172.31.1.15
+      # - 172.31.5.15
+      # - 172.31.5.15
 
   ports:
     traefik:

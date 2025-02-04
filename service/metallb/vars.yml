@@ -8,12 +8,15 @@ kustomize:
     pairs:
       app: metallb
   resources:
-  #- https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml # tag=v0.14.9
-  - https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-frr-k8s.yaml
+  - https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml # tag=v0.14.9
+  #- https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-frr.yaml
   #- github.com/metallb/metallb/config/native?ref=v0.14.9
-  - ./config/pools.yaml
 
-patches:
+  # see deployment, installed last
+  #- ./config/pools.yaml
+
+  # because of conflict
+  patches:
   - target:
       group: apiextensions.k8s.io
       kind: CustomResourceDefinition
@@ -21,12 +24,6 @@ patches:
     patch: |
         - op: remove
           path: /spec/conversion/webhook/clientConfig/caBundle
-      # - op: add
-      #   path: "/metadata/annotations/kustomize.toolkit.fluxcd.io~1ssa"
-      #   value: "IfNotPresent"
-      # - op: add
-      #   path: "/metadata/annotations/kustomize.toolkit.fluxcd.io~1force"
-      #   value: "Disabled"
 
 context:
   namespace: metallb

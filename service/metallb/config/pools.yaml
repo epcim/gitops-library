@@ -17,6 +17,16 @@ metadata:
   namespace: metallb
 spec:
   addresses: {{value}}
+#---
+# apiVersion: metallb.io/v1beta2
+# kind: BGPPeer
+# metadata:
+#   name: torouter
+#   namespace: metallb
+# spec:
+#   myASN: 64512
+#   peerASN: 65530
+#   peerAddress: 172.31.1.1
 # ---
 # apiVersion: metallb.io/v1beta1
 # kind: BGPAdvertisement
